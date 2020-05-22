@@ -1,0 +1,6 @@
+{
+    "python.pythonPath": "C:\\Users\\ENBSF\\anaconda3\\envs\\venv\\python.exe",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
+}

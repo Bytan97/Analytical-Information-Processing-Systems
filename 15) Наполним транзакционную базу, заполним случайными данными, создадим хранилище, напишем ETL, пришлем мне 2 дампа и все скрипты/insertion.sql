@@ -31,10 +31,10 @@ FROM generate_series(1, 5) t;
 INSERT INTO goods(g_group, name, weight, length, height, width)
 SELECT (SELECT id FROM goods_groups WHERE t > 0 ORDER BY random() LIMIT 1),
        ('Good: ' || t)::text,
-       (SELECT * FROM generate_series(1, 228) WHERE t > 0 ORDER BY random() LIMIT 1),
-       (SELECT * FROM generate_series(1, 1488) WHERE t > 0 ORDER BY random() LIMIT 1),
-       (SELECT * FROM generate_series(1, 50) WHERE t > 0 ORDER BY random() LIMIT 1),
-       (SELECT * FROM generate_series(1, 54) WHERE t > 0 ORDER BY random() LIMIT 1)
+       (SELECT * FROM generate_series(1, 10) WHERE t > 0 ORDER BY random() LIMIT 1),
+       (SELECT * FROM generate_series(1, 14) WHERE t > 0 ORDER BY random() LIMIT 1),
+       (SELECT * FROM generate_series(1, 5) WHERE t > 0 ORDER BY random() LIMIT 1),
+       (SELECT * FROM generate_series(1, 4) WHERE t > 0 ORDER BY random() LIMIT 1)
 FROM generate_series(1, 15) t;
 
 CREATE OR REPLACE FUNCTION generate_dates(dt1 date,

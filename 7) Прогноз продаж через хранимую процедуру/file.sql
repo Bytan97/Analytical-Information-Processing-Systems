@@ -1,69 +1,88 @@
-DROP FUNCTION IF EXISTS my_f(date, date, int);
+DROP FUNCTION IF EXISTS moving_average(d1 date, d2 date);
 
-CREATE OR REPLACE FUNCTION my_f(d1 date, d2 date, window_size int)
+CREATE OR REPLACE FUNCTION moving_average(d1 date, d2 date)
     RETURNS table
             (
-                client      int,
-                goods       int,
-                ddate       date,
-                ssum        int,
-                predication double precision
+                client     int,
+                goods      int,
+                date       date,
+                sum        int,
+                prediction double precision
             )
 AS
 $$
 DECLARE
-    curs CURSOR FOR SELECT recept.client cl, recgoods.goods g, recept.ddate d, sum(recgoods.volume * recgoods.price) s
-                    FROM recept
-                             JOIN recgoods ON (recept.id = recgoods.subid)
-                    WHERE recept.ddate >= d1
-                      AND recept.ddate <= d2
-                    GROUP BY recept.client, recgoods.goods, recept.ddate
-                    ORDER BY recept.ddate
+    cursor CURSOR FOR SELECT recept.client, recgoods.goods, recept.ddate, sum(recgoods.volume * recgoods.price)
+                      FROM recept
+                               JOIN recgoods ON (recept.id = recgoods.subid)
+                      WHERE recept.ddate >= d1
+                        AND recept.ddate <= d2
+--                       AND recept.client = cl
+--                       AND recgoods.goods = g
+                      GROUP BY recept.client, recgoods.goods, recept.ddate
+                      ORDER BY recept.client
     ;
-    pred double precision;
-    cnt  int;
---     cursor
-    cl   int;
-    dg   int;
-    dd   date;
-    ss   int;
-
-
+    cnt         int := 0;
+    temp_cnt    int := 0;
+    pred        double precision;
+    prev_client int;
+    prev_goods  int;
+--
+    client      int;
+    goods       int;
+    date        date;
+    sum         int;
 BEGIN
-    CREATE TEMP TABLE t
+    CREATE TEMP TABLE tmp
     (
-        client      int,
-        goods       int,
-        ddate       date,
-        ssum        int,
-        predicition double precision
+        goods_id int,
+        date     date,
+        sum      int
     );
-
-    OPEN curs;
-    cnt = 0;
+    CREATE TEMP TABLE to_return
+    (
+        client     int,
+        goods      int,
+        date       date,
+        sum        int,
+        prediction double precision
+    );
+    OPEN cursor;
     LOOP
-        FETCH curs INTO cl, dg, dd, ss;
-        EXIT WHEN NOT FOUND;
-        IF cnt < window_size THEN
-            INSERT INTO t VALUES (cl, dg, dd, ss, NULL);
-        ELSE
-            pred = (SELECT sum(d.ssum)
-                    FROM (SELECT t.ssum, row_number() OVER () AS row_n FROM t) AS d
-                    WHERE d.row_n >= cnt - window_size
-                      AND d.row_n <= cnt)
-                / window_size;
-            INSERT INTO t VALUES (cl, dg, dd, ss, pred);
-        END IF;
-        cnt = cnt + 1;
+        FETCH cursor INTO client, goods, date, sum;
+        EXIT WHEN NOT found;
 
+        IF client != prev_client OR goods != prev_goods THEN
+            temp_cnt := 1;
+            TRUNCATE tmp;
+            INSERT INTO tmp VALUES (goods, date, sum);
+            INSERT INTO to_return (client, goods, date, sum, prediction)
+            VALUES (client, goods, date, sum, sum);
+        ELSE
+            IF temp_cnt < 2 THEN
+                temp_cnt = temp_cnt + 1;
+                INSERT INTO to_return (client, goods, date, sum, prediction)
+                VALUES (client, goods, date, sum, sum);
+                INSERT INTO tmp VALUES (goods, date, sum);
+            ELSE
+                temp_cnt = temp_cnt + 1;
+                INSERT INTO to_return (client, goods, date, sum, prediction)
+                VALUES (client, goods, date, sum, (SELECT avg(tmp.sum) FROM tmp));
+                DELETE FROM tmp WHERE tmp.date IN (SELECT tmp.date FROM tmp ORDER BY tmp.date ASC LIMIT 1);
+                INSERT INTO tmp VALUES (goods, date, sum);
+            END IF;
+        END IF;
+        prev_goods = goods;
+        prev_client = client;
+        cnt := cnt + 1;
     END LOOP;
 
-
-    CLOSE curs;
-    RETURN QUERY SELECT * FROM t;
-    DROP TABLE t;
-END;
+    CLOSE cursor;
+    RETURN QUERY SELECT * FROM to_return;
+    DROP TABLE to_return;
+    DROP TABLE tmp;
+END
 $$ LANGUAGE plpgsql;
 
 SELECT *
-FROM my_f('2020-02-01', '2020-12-31', 2);
+FROM moving_average('2020-02-01', '2020-12-31');

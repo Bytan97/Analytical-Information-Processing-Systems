@@ -63,70 +63,60 @@ INSERT INTO remains(date_id, goods_id, storage_id, sum, count, volume, weight)
 SELECT TEMP.date_id,
        TEMP.goods_id,
        TEMP.storage_id,
-       coalesce((SELECT sum(S.sum)
-                 FROM sale.sale S
-                 WHERE S.date_id <= TEMP.date_id
-                   AND S.storage_id = TEMP.storage_id
-                   AND S.goods_id = TEMP.goods_id
-                ), 0) - coalesce((SELECT sum(P.sum)
-                                  FROM purchase.purchase P
-                                  WHERE P.date_id <= TEMP.date_id
-                                    AND P.storage_id = TEMP.storage_id
-                                    AND P.goods_id = TEMP.goods_id
-                                 ), 0) remains_sum,
+       (coalesce((SELECT sum(P.count)
+                  FROM purchase.purchase P
+                  WHERE P.date_id <= TEMP.date_id
+                    AND P.goods_id = TEMP.goods_id
+                    AND P.storage_id = TEMP.storage_id), 0) - coalesce((SELECT sum(S.count)
+                                                                        FROM sale.sale S
+                                                                        WHERE S.date_id <= TEMP.date_id
+                                                                          AND S.goods_id = TEMP.goods_id
+                                                                          AND S.storage_id = TEMP.storage_id), 0)) *
+       (SELECT P.purchase_price
+        FROM purchase.purchase P
+        WHERE P.date_id <= TEMP.date_id
+          AND P.goods_id = TEMP.goods_id
+          AND P.storage_id = TEMP.storage_id
+        ORDER BY p.date_id DESC
+        LIMIT 1)                                                                                                 sum,
        coalesce((SELECT sum(P.count)
-                 FROM sale.sale P
+                 FROM purchase.purchase P
                  WHERE P.date_id <= TEMP.date_id
-                   AND P.storage_id = TEMP.storage_id
                    AND P.goods_id = TEMP.goods_id
-                ), 0) - coalesce((SELECT sum(S.count)
-                                  FROM purchase.purchase S
-                                  WHERE S.date_id <= TEMP.date_id
-                                    AND S.storage_id = TEMP.storage_id
-                                    AND S.goods_id = TEMP.goods_id
-                                 ), 0) remains_count,
-       coalesce((SELECT sum(P.volume)
-                 FROM sale.sale P
-                 WHERE P.date_id <= TEMP.date_id
-                   AND P.storage_id = TEMP.storage_id
-                   AND P.goods_id = TEMP.goods_id
-                ), 0) - coalesce((SELECT sum(S.volume)
-                                  FROM purchase.purchase S
-                                  WHERE S.date_id <= TEMP.date_id
-                                    AND S.storage_id = TEMP.storage_id
-                                    AND S.goods_id = TEMP.goods_id
-                                 ), 0) remains_volume,
-       coalesce((SELECT sum(P.weight)
-                 FROM sale.sale P
-                 WHERE P.date_id <= TEMP.date_id
-                   AND P.storage_id = TEMP.storage_id
-                   AND P.goods_id = TEMP.goods_id
-                ), 0) - coalesce((SELECT sum(S.weight)
-                                  FROM purchase.purchase S
-                                  WHERE S.date_id <= TEMP.date_id
-                                    AND S.storage_id = TEMP.storage_id
-                                    AND S.goods_id = TEMP.goods_id
-                                 ), 0) remains_weight
+                   AND P.storage_id = TEMP.storage_id), 0) - coalesce((SELECT sum(S.count)
+                                                                       FROM sale.sale S
+                                                                       WHERE S.date_id <= TEMP.date_id
+                                                                         AND S.goods_id = TEMP.goods_id
+                                                                         AND S.storage_id = TEMP.storage_id), 0) count,
+       (coalesce((SELECT sum(P.count)
+                  FROM purchase.purchase P
+                  WHERE P.date_id <= TEMP.date_id
+                    AND P.goods_id = TEMP.goods_id
+                    AND P.storage_id = TEMP.storage_id), 0) - coalesce((SELECT sum(S.count)
+                                                                        FROM sale.sale S
+                                                                        WHERE S.date_id <= TEMP.date_id
+                                                                          AND S.goods_id = TEMP.goods_id
+                                                                          AND S.storage_id = TEMP.storage_id), 0)) *
+       (SELECT P.weight
+        FROM purchase.purchase P
+        WHERE P.date_id <= TEMP.date_id
+          AND P.goods_id = TEMP.goods_id
+          AND P.storage_id = TEMP.storage_id
+        ORDER BY TEMP.date_id DESC
+        LIMIT 1)
+                                                                                                                 volume,
+       (SELECT P.weight
+        FROM purchase.purchase P
+        WHERE P.date_id <= TEMP.date_id
+          AND P.goods_id = TEMP.goods_id
+          AND P.storage_id = TEMP.storage_id
+        ORDER BY TEMP.date_id DESC
+        LIMIT 1)                                                                                                 weight
+FROM (
+         SELECT S.date_id, S.goods_id, S.storage_id, S.sum, S.count
+         FROM sale.sale S
+         UNION
+         SELECT P.date_id, P.goods_id, P.storage_id, P.sum, P.count
+         FROM purchase.purchase P
+     ) temp;
 
-
-FROM (SELECT P.date_id,
-             P.storage_id,
-             P.goods_id,
-             P.sum,
-             P.count,
-             P.volume,
-             P.weight
-      FROM purchase.purchase P
-      UNION
-      SELECT S.date_id,
-             S.storage_id,
-             S.goods_id,
-             S.sum,
-             S.count,
-             S.volume,
-             S.weight
-      FROM sale.sale S) AS temp
-;
-
-SELECT *
-FROM remains;

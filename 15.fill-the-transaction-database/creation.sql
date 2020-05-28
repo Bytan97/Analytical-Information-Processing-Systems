@@ -17,6 +17,10 @@ DROP TABLE IF EXISTS bank_recept CASCADE;
 DROP TABLE IF EXISTS bank_income CASCADE;
 DROP TABLE IF EXISTS temp CASCADE;
 
+drop SCHEMA if EXISTS purchase CASCADE;
+drop SCHEMA if EXISTS remains CASCADE;
+drop SCHEMA if EXISTS sale CASCADE;
+
 CREATE TABLE region
 (
     id   serial,

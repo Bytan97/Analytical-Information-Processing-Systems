@@ -202,15 +202,15 @@ $$ LANGUAGE SQL IMMUTABLE;
 -- ORDER BY d;
 
 INSERT INTO recept(ddate, ndoc, client, storage)
-SELECT (SELECT * FROM generate_dates('2020-01-01', '2020-03-31', 1) WHERE t > 0 ORDER BY random() LIMIT 1) d,
+SELECT (SELECT * FROM generate_dates('2020-01-01', '2020-12-31', 5) WHERE t > 0 ORDER BY random() LIMIT 1) d,
        t,
        (SELECT client.id FROM client WHERE t > 0 ORDER BY random() LIMIT 1),
        (SELECT storage.id FROM storage WHERE t > 0 ORDER BY random() LIMIT 1)
-FROM generate_series(1, 10000) t
+FROM generate_series(1, 1000) t
 ORDER BY d;
 
 INSERT INTO income(ddate, ndoc, client, storage)
-SELECT (SELECT * FROM generate_dates('2020-04-01', '2020-12-31', 1) WHERE t > 0 ORDER BY random() LIMIT 1) d,
+SELECT (SELECT * FROM generate_dates('2019-01-01', '2019-12-31', 1) WHERE t > 0 ORDER BY random() LIMIT 1) d,
        t,
        (SELECT client.id FROM client WHERE t > 0 ORDER BY random() LIMIT 1),
        (SELECT storage.id FROM storage WHERE t > 0 ORDER BY random() LIMIT 1)
@@ -232,20 +232,20 @@ SELECT t,
        (SELECT goods.id FROM goods WHERE t > 0 ORDER BY random() LIMIT 1),
        (SELECT * FROM generate_series(100, 500) WHERE t > 0 ORDER BY random() LIMIT 1),
        (SELECT * FROM generate_series(350, 1500) WHERE t > 0 ORDER BY random() LIMIT 1)
-FROM generate_series(1, 10000) t;
+FROM generate_series(1, 1000) t;
 
 
 INSERT INTO bank_income(ddate, summ, client)
 SELECT R.ddate, (R2.volume * R2.price) sum, R.client
 FROM recept R
          JOIN recgoods R2 ON R.id = R2.id
-LIMIT 5000;
+LIMIT 500;
 
 INSERT INTO cassa_income(ddate, summ, client)
 SELECT R.ddate, (R2.volume * R2.price) sum, R.client
 FROM recept R
          JOIN recgoods R2 ON R.id = R2.id
-LIMIT 5000 OFFSET 5000;
+LIMIT 500 OFFSET 500;
 
 INSERT INTO bank_recept(ddate, summ, client)
 SELECT I.ddate, (I2.volume * I2.price) sum, I.client

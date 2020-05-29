@@ -41,6 +41,7 @@ CREATE TABLE sale
     client_id  int REFERENCES client (id),
     goods_id   int REFERENCES goods (id),
     storage_id int REFERENCES storage (id),
+    date       date,
 
     sum        int,
     count      int,
@@ -68,11 +69,12 @@ SELECT S.name
 FROM public.storage S;
 
 
-INSERT INTO sale (date_id, client_id, goods_id, storage_id, sum, count, volume, weight, cost_price, sell_price)
+INSERT INTO sale (date_id, client_id, goods_id, storage_id, date, sum, count, volume, weight, cost_price, sell_price)
 SELECT D.id       date_id,
        R1.client  client_id,
        R2.goods   goods_id,
        R1.storage storage_id,
+       R1.ddate,
 
        sum(R2.volume * R2.price),
        R2.volume,
@@ -84,6 +86,7 @@ FROM public.recept R1
          JOIN public.recgoods R2 ON R1.id = R2.id
          JOIN goods G ON G.id = R2.goods
          JOIN date D ON D.date = R1.ddate
-GROUP BY D.id, R1.client, R2.goods, R1.storage, R2.volume, R2.volume * G.item_weight,
+GROUP BY D.id, R1.client, R2.goods, R1.storage, R1.ddate, R2.volume, R2.volume * G.item_weight,
          (SELECT P.purchase_price FROM purchase.purchase P WHERE p.date_id <= D.id AND p.goods_id = R2.goods LIMIT 1),
          R2.price;
+

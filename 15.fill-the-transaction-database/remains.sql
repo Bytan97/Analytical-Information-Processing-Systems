@@ -33,6 +33,7 @@ CREATE TABLE remains
     date_id    int REFERENCES date (id),
     goods_id   int REFERENCES goods (id),
     storage_id int REFERENCES storage (id),
+    date date,
 
     sum        int,
     count      int,
@@ -59,10 +60,11 @@ INSERT INTO goods (goods_group, item_weight, item_volume, name)
 SELECT G.g_group, G.weight, (G.weight * G.height * G.length), G.name
 FROM public.goods G;
 
-INSERT INTO remains(date_id, goods_id, storage_id, sum, count, volume, weight)
+INSERT INTO remains(date_id, goods_id, storage_id, date,sum, count, volume, weight)
 SELECT TEMP.date_id,
        TEMP.goods_id,
        TEMP.storage_id,
+       TEMP.date,
        (coalesce((SELECT sum(P.count)
                   FROM purchase.purchase P
                   WHERE P.date_id <= TEMP.date_id
@@ -113,10 +115,12 @@ SELECT TEMP.date_id,
         ORDER BY TEMP.date_id DESC
         LIMIT 1)                                                                                                 weight
 FROM (
-         SELECT S.date_id, S.goods_id, S.storage_id, S.sum, S.count
+         SELECT S.date_id, S.goods_id, S.storage_id, S.sum, S.count, S.date
          FROM sale.sale S
          UNION
-         SELECT P.date_id, P.goods_id, P.storage_id, P.sum, P.count
+         SELECT P.date_id, P.goods_id, P.storage_id, P.sum, P.count, P.date
          FROM purchase.purchase P
      ) temp;
 
+
+SELECT * FROM remains LIMIT 3;
